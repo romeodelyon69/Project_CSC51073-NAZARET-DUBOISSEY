@@ -2,29 +2,29 @@
 #define NLIB_H
 
 #include <vector>
-#include <algorithm>
-#include <stdexcept>
+#include <optional>
 
-namespace nlib {
-
-// Buffer class for storing and computing statistics on recent values
 class Buffer {
 public:
-    explicit Buffer(size_t size);
+    // Constructor
+    explicit Buffer(int size);
     
-    void add(double value);
-    double getMedian() const;
-    double getMean() const;
-    size_t size() const;
-    bool empty() const;
-    void clear();
-
+    // Add a value to the buffer
+    void add(float value);
+    
+    // Get the median value from the buffer
+    std::optional<float> get_median() const;
+    
+    // Get the mean value from the buffer
+    std::optional<float> get_mean() const;
+    
+    // Get the current size of data
+    size_t get_data_size() const { return data.size(); }
+    
 private:
-    size_t maxSize_;
-    std::vector<double> data_;
+    int size;
+    std::vector<float> data;
 };
-
-} // namespace nlib
 
 #endif // NLIB_H
 
