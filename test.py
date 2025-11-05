@@ -18,12 +18,14 @@ while True:
     if results.multi_face_landmarks:
         for face_landmarks in results.multi_face_landmarks:
             mp_draw.draw_landmarks(
-                frame, face_landmarks, mp_face_mesh.FACEMESH_TESSELATION,
-                mp_draw.DrawingSpec(color=(0, 255, 0), thickness=1, circle_radius=1)
+                frame,
+                face_landmarks,
+                mp_face_mesh.FACEMESH_TESSELATION,
+                mp_draw.DrawingSpec(color=(0, 255, 0), thickness=1, circle_radius=1),
             )
 
     cv2.imshow("Eye Tracker", frame)
-    
+
     if cv2.waitKey(1) & 0xFF == 27:
         break
 
