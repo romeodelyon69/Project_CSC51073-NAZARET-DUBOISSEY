@@ -30,6 +30,7 @@ __pycache__/
 env/
 venv/
 *.egg-info/
+.venv/
 
 # Data files
 *.csv

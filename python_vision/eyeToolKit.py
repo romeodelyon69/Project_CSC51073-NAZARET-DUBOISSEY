@@ -181,3 +181,11 @@ def compute_gaze_physically(
     right_gaze_Y = face_Y + np.sin(np.radians(right_pitch)) * face_Z
 
     return left_gaze_X, right_gaze_X, left_gaze_Y, right_gaze_Y
+
+
+def get_eye_area(points: List[Tuple[int, int]]) -> float:
+    return cv2.contourArea(np.array(points))
+
+CLOSED_EYE_AREA = 50
+def get_eye_is_closed(eye_area: float) -> bool:
+    return eye_area < CLOSED_EYE_AREA
