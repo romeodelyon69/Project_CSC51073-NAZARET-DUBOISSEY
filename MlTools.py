@@ -1,11 +1,13 @@
 import torch
 import pandas as pd
 from sklearn.model_selection import train_test_split
+from typing import Tuple
+import numpy as np
 
 
 # let's create a MLP that take 14 inputs and output 2 values
 class EyeMLP(torch.nn.Module):
-    def __init__(self):
+    def __init__(self) -> None:
         super(EyeMLP, self).__init__()
         self.fc1 = torch.nn.Linear(30, 64)
         self.fc2 = torch.nn.Linear(64, 64)
@@ -16,7 +18,7 @@ class EyeMLP(torch.nn.Module):
         self.relu = torch.nn.ReLU()
         self.dropout = torch.nn.Dropout(0.2)
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = self.relu(self.fc1(x))
         x = self.dropout(x)
         x = self.relu(self.fc2(x))
@@ -31,17 +33,17 @@ class EyeMLP(torch.nn.Module):
         return x
 
 
-def load_data(file_path):
+def load_data(file_path: str) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     # load data from a csv file
     data = pd.read_csv(file_path)
     X, y = data.iloc[:, :-2].values, data.iloc[:, -2:].values
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.2, random_state=42
     )
-    return X_train, X_test, y_train, y_test
+    return X_train, X_test, y_train, y_test  # type: ignore
 
 
-def load_model(model_path, device):
+def load_model(model_path: str, device: torch.device) -> EyeMLP:
     model = EyeMLP()
     model.load_state_dict(torch.load(model_path, map_location=device))
     model.to(device)
