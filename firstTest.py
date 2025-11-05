@@ -6,8 +6,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import eyeToolKit as etk
 import math
-import MlTools as mlt
-import torch
 import time
 import Nlib
 
@@ -130,7 +128,6 @@ csv_writer.writerow(
 fourcc = cv2.VideoWriter_fourcc(*"mp4v")
 out = cv2.VideoWriter("output.mp4", fourcc, 20.0, (640, 480))
 
-gaze_predictor = mlt.load_model("eye_mlp_model.pth", torch.device("cpu"))
 
 left_bufferX = Nlib.Buffer(9)
 left_bufferY = Nlib.Buffer(9)
@@ -406,56 +403,6 @@ while cap.isOpened():
         eye_cropped_big_without[:, :, 0] = 0  # Remove blue channel
         # eye_cropped_big_without[:, :, 1] = 0  # Remove green channel
         # eye_cropped_big_without[:, :, 2] = 0  # Remove red channel
-
-        # predict gaze position using the MLP model
-        input_tensor = torch.tensor(
-            [
-                [
-                    noseX,
-                    noseY,
-                    leftEyeX,
-                    leftEyeY,
-                    rightEyeX,
-                    rightEyeY,
-                    leftEyeBottomX,
-                    leftEyeBottomY,
-                    rightEyeBottomX,
-                    rightEyeBottomY,
-                    leftEyeTopX,
-                    leftEyeTopY,
-                    rightEyeTopX,
-                    rightEyeTopY,
-                    leftEyeInnerX,
-                    leftEyeInnerY,
-                    rightEyeInnerX,
-                    rightEyeInnerY,
-                    leftEyeOuterX,
-                    leftEyeOuterY,
-                    rightEyeOuterX,
-                    rightEyeOuterY,
-                    leftPupilX,
-                    leftPupilY,
-                    rightPupilX,
-                    rightPupilY,
-                    yaw,
-                    pitch,
-                    roll,
-                    face_size,
-                ]
-            ],
-            dtype=torch.float32,
-        )
-        with torch.no_grad():
-            gaze_output = gaze_predictor(input_tensor)
-            gaze_x = gaze_output[0][0].item()
-            gaze_y = gaze_output[0][1].item()
-            # draw the gaze position on the frame
-            gaze_screen_x = int((gaze_x) * SCREEN_WIDTH)
-            gaze_screen_y = int((gaze_y) * SCREEN_HEIGHT)
-            cv2.circle(frame_big, (gaze_screen_x, gaze_screen_y), 100, (255, 0, 0), -1)
-            cv2.circle(calib_img, (gaze_screen_x, gaze_screen_y), 100, (255, 0, 0), -1)
-            print("Gaze position :", gaze_x, gaze_y)
-            print("Gaz screen pos : ", gaze_screen_x, gaze_screen_y)
 
         # show the result
         cv2.imshow("Eye Tracking", frame_big)
