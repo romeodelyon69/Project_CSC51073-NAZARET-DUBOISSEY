@@ -1,17 +1,11 @@
-import csv
-from datetime import datetime
-from time import time
 import cv2
-import mediapipe as mp
 from mediapipe.python.solutions import face_mesh as mp_face_mesh
 import numpy as np
-import matplotlib.pyplot as plt
 import eyeToolKit as etk
 import math
-import time
-from typing import cast
+
 import Nlib
-from morse_decoder import MorseDecoder
+from morse_decoder import PupilDecoder
 
 from landmarks import (
     CHIN_LANDMARK,
@@ -52,7 +46,7 @@ SCREEN_WIDTH = 1540
 SCREEN_HEIGHT = 880
 
 csv_writer = CSVWriter()
-morse_decoder = MorseDecoder()
+pupil_decoder = PupilDecoder()
 
 while cap.isOpened():
     success, frame = cap.read()
@@ -63,7 +57,7 @@ while cap.isOpened():
     results = face_mesh.process(frame_rgb)
 
     h, w, _ = frame.shape
-    #print("h:", h, "w:", w)
+    # print("h:", h, "w:", w)
 
     face_orientation = []
     tick = cv2.getTickCount()
@@ -87,8 +81,8 @@ while cap.isOpened():
     )
 
     if results.multi_face_landmarks:
-        #print("number of faces:", len(results.multi_face_landmarks))
-        for face_landmarks in results.multi_face_landmarks: 
+        # print("number of faces:", len(results.multi_face_landmarks))
+        for face_landmarks in results.multi_face_landmarks:
             face_orientation.append(
                 etk.get_face_orientation(
                     face_landmarks.landmark,
@@ -114,16 +108,7 @@ while cap.isOpened():
             right_eye_ellipse, right_eye_points = etk.fit_ellipse_to_eye(
                 face_landmarks.landmark, RIGHT_EYE_LANDMARKS, h, w
             )
-            left_eye_area = etk.get_eye_area(left_eye_points)
-            right_eye_area = etk.get_eye_area(right_eye_points)
-            left_eye_is_closed = etk.get_eye_is_closed(left_eye_area)
-            right_eye_is_closed = etk.get_eye_is_closed(right_eye_area)
-            #print(f"left eye is closed: {left_eye_is_closed}({left_eye_area}), right eye is closed: {right_eye_is_closed}({right_eye_area})")
-
-            result = morse_decoder.add_entry(left_eye_is_closed, right_eye_is_closed)
-            #print(f"sign stack: {morse_decoder.sign_stack}, l: {int(morse_decoder.last_left)}, r: {int(morse_decoder.last_right)}, count: {morse_decoder.same_state_count} and dt {round((datetime.now() - morse_decoder.last_not_blank).total_seconds(), 2)}")
-            if result is not None:
-                print(f"result: {result}")
+            pupil_decoder.add_entry(left_eye_points, right_eye_points)
 
             if left_eye_ellipse is not None and right_eye_ellipse is not None:
                 # Crée un masque pour les yeux
@@ -153,13 +138,12 @@ while cap.isOpened():
                         right_eye_img, right_eye_mask[y : y + h_box, x : x + w_box]
                     )
                 except Exception as e:
-                    #print(f"Error extracting pupil: {e}")
+                    # print(f"Error extracting pupil: {e}")
                     left_pupil = None
                     right_pupil = None
-                
-                if left_pupil is not None and right_pupil is not None:
 
-                # get the centroid of each pupil
+                if left_pupil is not None and right_pupil is not None:
+                    # get the centroid of each pupil
                     M_left = cv2.moments(left_pupil)
                     M_right = cv2.moments(right_pupil)
 
@@ -171,10 +155,14 @@ while cap.isOpened():
                     )
 
                     right_bufferX.add(
-                        int(M_right["m10"] / M_right["m00"]) if M_right["m00"] != 0 else 0
+                        int(M_right["m10"] / M_right["m00"])
+                        if M_right["m00"] != 0
+                        else 0
                     )
                     right_bufferY.add(
-                        int(M_right["m01"] / M_right["m00"]) if M_right["m00"] != 0 else 0
+                        int(M_right["m01"] / M_right["m00"])
+                        if M_right["m00"] != 0
+                        else 0
                     )
 
                     # draw the centroid on the original frame
@@ -188,14 +176,20 @@ while cap.isOpened():
                     cv2.circle(frame, (cX_right, cY_right), 2, (0, 255, 255), -1)
 
                     # compute the centroid of each eye
-                    M_left_eye = cv2.moments(left_eye_mask[y : y + h_box, x : x + w_box])
-                    M_right_eye = cv2.moments(right_eye_mask[y : y + h_box, x : x + w_box])
+                    M_left_eye = cv2.moments(
+                        left_eye_mask[y : y + h_box, x : x + w_box]
+                    )
+                    M_right_eye = cv2.moments(
+                        right_eye_mask[y : y + h_box, x : x + w_box]
+                    )
 
                     # draw the centroid on the original frame
                     if M_left_eye["m00"] != 0:
                         cX_left_eye = int(M_left_eye["m10"] / M_left_eye["m00"]) + x
                         cY_left_eye = int(M_left_eye["m01"] / M_left_eye["m00"]) + y
-                        cv2.circle(frame, (cX_left_eye, cY_left_eye), 2, (255, 255, 0), -1)
+                        cv2.circle(
+                            frame, (cX_left_eye, cY_left_eye), 2, (255, 255, 0), -1
+                        )
                     if M_right_eye["m00"] != 0:
                         cX_right_eye = int(M_right_eye["m10"] / M_right_eye["m00"]) + x
                         cY_right_eye = int(M_right_eye["m01"] / M_right_eye["m00"]) + y
@@ -234,7 +228,7 @@ while cap.isOpened():
                 SCREEN_HEIGHT,
             )
 
-            #print("Z de la face : ", face_landmarks.landmark[RIGHT_EYE_BOTTOM].z)
+            # print("Z de la face : ", face_landmarks.landmark[RIGHT_EYE_BOTTOM].z)
             leftEyeBottomX = face_landmarks.landmark[LEFT_EYE_BOTTOM].x
             leftEyeBottomY = face_landmarks.landmark[LEFT_EYE_BOTTOM].y
             rightEyeBottomX = face_landmarks.landmark[RIGHT_EYE_BOTTOM].x
