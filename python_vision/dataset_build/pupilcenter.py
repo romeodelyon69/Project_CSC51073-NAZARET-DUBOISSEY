@@ -103,18 +103,26 @@ try:
                             pupil_x = pupil_x_cropped + x
                             pupil_y = pupil_y_cropped + y
 
-                            # Save to CSV
-                            csv_writer.writerow([detection_id, pupil_x, pupil_y])
+                            # Get eye ellipse center (center the crop on eye, not pupil)
+                            (eye_center_x, eye_center_y), _, _ = left_eye_ellipse
+                            eye_center_x = int(eye_center_x)
+                            eye_center_y = int(eye_center_y)
 
-                            # Extract fixed-size crop around pupil
+                            # Extract fixed-size crop centered on eye mesh
                             half_size = IMAGE_CROP_SIZE // 2
-                            x1 = max(0, pupil_x - half_size)
-                            y1 = max(0, pupil_y - half_size)
-                            x2 = min(w, pupil_x + half_size)
-                            y2 = min(h, pupil_y + half_size)
+                            x1 = max(0, eye_center_x - half_size)
+                            y1 = max(0, eye_center_y - half_size)
+                            x2 = min(w, eye_center_x + half_size)
+                            y2 = min(h, eye_center_y + half_size)
+
+                            # Calculate pupil position relative to crop (before padding/resizing)
+                            pupil_x_in_crop = pupil_x - x1
+                            pupil_y_in_crop = pupil_y - y1
 
                             # If crop goes out of bounds, pad with black
                             crop = frame[y1:y2, x1:x2].copy()
+                            pad_x = 0
+                            pad_y = 0
                             if (
                                 crop.shape[0] < IMAGE_CROP_SIZE
                                 or crop.shape[1] < IMAGE_CROP_SIZE
@@ -130,6 +138,13 @@ try:
                                     pad_x : pad_x + crop.shape[1],
                                 ] = crop
                                 crop = padded
+                                # Adjust pupil position for padding
+                                pupil_x_in_crop += pad_x
+                                pupil_y_in_crop += pad_y
+
+                            # Calculate scale factor if resizing is needed
+                            scale_x = IMAGE_CROP_SIZE / crop.shape[1]
+                            scale_y = IMAGE_CROP_SIZE / crop.shape[0]
 
                             # Resize to exact size if needed
                             if (
@@ -139,6 +154,18 @@ try:
                                 crop = cv2.resize(
                                     crop, (IMAGE_CROP_SIZE, IMAGE_CROP_SIZE)
                                 )
+                                # Adjust pupil position for resizing
+                                pupil_x_in_crop = int(pupil_x_in_crop * scale_x)
+                                pupil_y_in_crop = int(pupil_y_in_crop * scale_y)
+
+                            # Final pupil position in saved image (50x50)
+                            pupil_x_final = pupil_x_in_crop
+                            pupil_y_final = pupil_y_in_crop
+
+                            # Save to CSV (position in saved image)
+                            csv_writer.writerow(
+                                [detection_id, pupil_x_final, pupil_y_final]
+                            )
 
                             # Save image
                             image_path = images_dir / f"{detection_id:06d}.png"
@@ -162,18 +189,26 @@ try:
                             pupil_x = pupil_x_cropped + x
                             pupil_y = pupil_y_cropped + y
 
-                            # Save to CSV
-                            csv_writer.writerow([detection_id, pupil_x, pupil_y])
+                            # Get eye ellipse center (center the crop on eye, not pupil)
+                            (eye_center_x, eye_center_y), _, _ = right_eye_ellipse
+                            eye_center_x = int(eye_center_x)
+                            eye_center_y = int(eye_center_y)
 
-                            # Extract fixed-size crop around pupil
+                            # Extract fixed-size crop centered on eye mesh
                             half_size = IMAGE_CROP_SIZE // 2
-                            x1 = max(0, pupil_x - half_size)
-                            y1 = max(0, pupil_y - half_size)
-                            x2 = min(w, pupil_x + half_size)
-                            y2 = min(h, pupil_y + half_size)
+                            x1 = max(0, eye_center_x - half_size)
+                            y1 = max(0, eye_center_y - half_size)
+                            x2 = min(w, eye_center_x + half_size)
+                            y2 = min(h, eye_center_y + half_size)
+
+                            # Calculate pupil position relative to crop (before padding/resizing)
+                            pupil_x_in_crop = pupil_x - x1
+                            pupil_y_in_crop = pupil_y - y1
 
                             # If crop goes out of bounds, pad with black
                             crop = frame[y1:y2, x1:x2].copy()
+                            pad_x = 0
+                            pad_y = 0
                             if (
                                 crop.shape[0] < IMAGE_CROP_SIZE
                                 or crop.shape[1] < IMAGE_CROP_SIZE
@@ -189,6 +224,13 @@ try:
                                     pad_x : pad_x + crop.shape[1],
                                 ] = crop
                                 crop = padded
+                                # Adjust pupil position for padding
+                                pupil_x_in_crop += pad_x
+                                pupil_y_in_crop += pad_y
+
+                            # Calculate scale factor if resizing is needed
+                            scale_x = IMAGE_CROP_SIZE / crop.shape[1]
+                            scale_y = IMAGE_CROP_SIZE / crop.shape[0]
 
                             # Resize to exact size if needed
                             if (
@@ -198,6 +240,18 @@ try:
                                 crop = cv2.resize(
                                     crop, (IMAGE_CROP_SIZE, IMAGE_CROP_SIZE)
                                 )
+                                # Adjust pupil position for resizing
+                                pupil_x_in_crop = int(pupil_x_in_crop * scale_x)
+                                pupil_y_in_crop = int(pupil_y_in_crop * scale_y)
+
+                            # Final pupil position in saved image (50x50)
+                            pupil_x_final = pupil_x_in_crop
+                            pupil_y_final = pupil_y_in_crop
+
+                            # Save to CSV (position in saved image)
+                            csv_writer.writerow(
+                                [detection_id, pupil_x_final, pupil_y_final]
+                            )
 
                             # Save image
                             image_path = images_dir / f"{detection_id:06d}.png"
