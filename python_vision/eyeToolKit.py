@@ -2,9 +2,12 @@ import cv2
 import mediapipe as mp
 import numpy as np
 import matplotlib.pyplot as plt
+from typing import Tuple, List, Optional, Any
 
 
-def fit_ellipse_to_eye(landmarks, eye_landmarks, h, w):
+def fit_ellipse_to_eye(
+    landmarks: Any, eye_landmarks: List[int], h: int, w: int
+) -> Tuple[Optional[Tuple], List[Tuple[int, int]]]:
     points = [(int(landmarks[i].x * w), int(landmarks[i].y * h)) for i in eye_landmarks]
     if len(points) >= 5:  # fitEllipse requires at least 5 points
         ellipse = cv2.fitEllipse(np.array(points))
@@ -12,14 +15,16 @@ def fit_ellipse_to_eye(landmarks, eye_landmarks, h, w):
     return None, points
 
 
-def extract_eye_region(frame, ellipse):
+def extract_eye_region(
+    frame: np.ndarray, ellipse: Tuple
+) -> Tuple[np.ndarray, np.ndarray]:
     eye_mask = np.zeros(frame.shape[:2], dtype=np.uint8)
     cv2.ellipse(eye_mask, ellipse, (255, 255, 255), -1)
     eye_region = cv2.bitwise_and(frame, frame, mask=eye_mask)
     return eye_region, eye_mask
 
 
-def extract_pupil_old(eye_region, eye_mask):
+def extract_pupil_old(eye_region: np.ndarray, eye_mask: np.ndarray) -> np.ndarray:
     gray_eye = cv2.cvtColor(eye_region, cv2.COLOR_BGR2GRAY)
     hist = cv2.calcHist([gray_eye], [0], eye_mask, [256], [0, 256])
     gray_eye = cv2.equalizeHist(gray_eye)
@@ -35,12 +40,14 @@ def extract_pupil_old(eye_region, eye_mask):
     return pupil
 
 
-def extract_pupil2(eye_region, eye_mask):
+def extract_pupil2(
+    eye_region: np.ndarray, eye_mask: np.ndarray
+) -> Optional[np.ndarray]:
     gray_eye = cv2.cvtColor(eye_region, cv2.COLOR_BGR2GRAY)
     hist = cv2.calcHist([gray_eye], [0], eye_mask, [256], [0, 256])
     gray_eye = cv2.equalizeHist(gray_eye)
     # extract the darkest 5% of pixels in the eye region
-    threshold_value = np.percentile(gray_eye[eye_mask == 255], 5)
+    threshold_value = np.percentile(gray_eye[eye_mask == 255], 5).astype(float)
     _, pupil = cv2.threshold(gray_eye, threshold_value, 255, cv2.THRESH_BINARY_INV)
     pupil = cv2.bitwise_and(pupil, pupil, mask=eye_mask)
     num_labels, labels, stats, centroids = cv2.connectedComponentsWithStats(
@@ -53,11 +60,11 @@ def extract_pupil2(eye_region, eye_mask):
         return pupil
 
 
-def extract_pupil3(eye_region, eye_mask):
+def extract_pupil3(eye_region: np.ndarray, eye_mask: np.ndarray) -> np.ndarray:
     gray_eye = cv2.cvtColor(eye_region, cv2.COLOR_BGR2GRAY)
     gray_eye = cv2.equalizeHist(gray_eye)
 
-    threshold_value = np.percentile(gray_eye[eye_mask == 255], 65)
+    threshold_value = np.percentile(gray_eye[eye_mask == 255], 65).astype(float)
     _, iris = cv2.threshold(gray_eye, threshold_value, 255, cv2.THRESH_BINARY_INV)
     iris = cv2.bitwise_and(iris, iris, mask=eye_mask)
     # close circle
@@ -94,14 +101,14 @@ def extract_pupil3(eye_region, eye_mask):
 
 
 def get_face_orientation(
-    landmarks,
-    chin_idx,
-    nose_idx,
-    left_eye_idx,
-    right_eye_idx,
-    left_mouth_idx,
-    right_mouth_idx,
-):
+    landmarks: Any,
+    chin_idx: int,
+    nose_idx: int,
+    left_eye_idx: int,
+    right_eye_idx: int,
+    left_mouth_idx: int,
+    right_mouth_idx: int,
+) -> Tuple[float, float, float]:
     chin = np.array([landmarks[chin_idx].x, landmarks[chin_idx].y])
     nose = np.array([landmarks[nose_idx].x, landmarks[nose_idx].y])
     left_eye = np.array([landmarks[left_eye_idx].x, landmarks[left_eye_idx].y])
@@ -122,7 +129,13 @@ def get_face_orientation(
     return yaw, pitch, roll
 
 
-def get_face_size(landmarks, chin_idx, nose_idx, left_eye_idx, right_eye_idx):
+def get_face_size(
+    landmarks: Any,
+    chin_idx: int,
+    nose_idx: int,
+    left_eye_idx: int,
+    right_eye_idx: int,
+) -> float:
     chin = np.array([landmarks[chin_idx].x, landmarks[chin_idx].y])
     nose = np.array([landmarks[nose_idx].x, landmarks[nose_idx].y])
     left_eye = np.array([landmarks[left_eye_idx].x, landmarks[left_eye_idx].y])
@@ -133,8 +146,10 @@ def get_face_size(landmarks, chin_idx, nose_idx, left_eye_idx, right_eye_idx):
 
 
 def gen_red_circle_on_white_bg(
-    size=(1920, 1080), circle_radius=20, circle_position=(0, 0)
-):
+    size: Tuple[int, int] = (1920, 1080),
+    circle_radius: int = 20,
+    circle_position: Tuple[int, int] = (0, 0),
+) -> np.ndarray:
     # print("position :", circle_position)
     img = np.ones((size[1], size[0], 3), dtype=np.uint8) * 255
     center = (circle_position[0], circle_position[1])
@@ -143,16 +158,16 @@ def gen_red_circle_on_white_bg(
 
 
 def compute_gaze_physically(
-    right_eye_yaw,
-    left_eye_yaw,
-    right_eye_pitch,
-    left_eye_pitch,
-    face_yaw,
-    face_pitch,
-    face_X,
-    face_Y,
-    face_Z,
-):
+    right_eye_yaw: float,
+    left_eye_yaw: float,
+    right_eye_pitch: float,
+    left_eye_pitch: float,
+    face_yaw: float,
+    face_pitch: float,
+    face_X: float,
+    face_Y: float,
+    face_Z: float,
+) -> Tuple[float, float, float, float]:
     left_yaw = left_eye_yaw + face_yaw
     right_yaw = right_eye_yaw + face_yaw
 
@@ -166,3 +181,11 @@ def compute_gaze_physically(
     right_gaze_Y = face_Y + np.sin(np.radians(right_pitch)) * face_Z
 
     return left_gaze_X, right_gaze_X, left_gaze_Y, right_gaze_Y
+
+
+def get_eye_area(points: List[Tuple[int, int]]) -> float:
+    return cv2.contourArea(np.array(points))
+
+CLOSED_EYE_AREA = 50
+def get_eye_is_closed(eye_area: float) -> bool:
+    return eye_area < CLOSED_EYE_AREA
