@@ -6,8 +6,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import eyeToolKit as etk
 import math
-import MlTools as mlt
-import torch
 import time
 import Nlib
 
@@ -214,16 +212,6 @@ while cap.isOpened():
                 eyes_cropped = eyes[y : y + h_box, x : x + w_box]
                 left_eye_img = left_eye_img[y : y + h_box, x : x + w_box]
                 right_eye_img = right_eye_img[y : y + h_box, x : x + w_box]
-
-                # draw the centroid on the original frame
-
-                cX_left = left_bufferX.get_median() + x
-                cY_left = left_bufferY.get_median() + y
-                cv2.circle(frame, (cX_left, cY_left), 2, (0, 255, 255), -1)
-
-                cX_right = right_bufferX.get_median() + x
-                cY_right = right_bufferY.get_median() + y
-                cv2.circle(frame, (cX_right, cY_right), 2, (0, 255, 255), -1)
 
                 # compute the centroid of each eye
                 M_left_eye = cv2.moments(left_eye_mask[y : y + h_box, x : x + w_box])
