@@ -130,8 +130,6 @@ csv_writer.writerow(
 fourcc = cv2.VideoWriter_fourcc(*"mp4v")
 out = cv2.VideoWriter("output.mp4", fourcc, 20.0, (640, 480))
 
-gaze_predictor = mlt.load_model("eye_mlp_model.pth", torch.device("cpu"))
-
 left_bufferX = Nlib.Buffer(9)
 left_bufferY = Nlib.Buffer(9)
 right_bufferX = Nlib.Buffer(9)
@@ -189,6 +187,7 @@ while cap.isOpened():
                 LEFT_EYE_OUTER,
                 RIGHT_EYE_OUTER,
             )
+
             # fit ellipse to left eye points
             left_eye_ellipse, left_eye_points = etk.fit_ellipse_to_eye(
                 face_landmarks.landmark, LEFT_EYE_LANDMARKS, h, w
@@ -395,6 +394,25 @@ while cap.isOpened():
                 ]
             )
 
+        # Convertir les landmarks de l'iris en coordonnées pixel
+        left_iris_pts = np.array([(int(face_landmarks.landmark[i].x * w),
+                                    int(face_landmarks.landmark[i].y * h)) for i in LEFT_IRIS_LANDMARKS])
+        right_iris_pts = np.array([(int(face_landmarks.landmark[i].x * w),
+                                    int(face_landmarks.landmark[i].y * h)) for i in RIGHT_IRIS_LANDMARKS])
+
+        # Calculer le centre de chaque iris
+        left_center = tuple(left_iris_pts.mean(axis=0).astype(int))
+        right_center = tuple(right_iris_pts.mean(axis=0).astype(int))
+
+        # Dessiner le contour de l’iris
+        cv2.polylines(frame, [left_iris_pts], isClosed=True, color=(0, 255, 0), thickness=1)
+        cv2.polylines(frame, [right_iris_pts], isClosed=True, color=(0, 255, 0), thickness=1)
+
+        # Dessiner le centre
+        cv2.circle(frame, left_center, 3, (0, 0, 255), -1)
+        cv2.circle(frame, right_center, 3, (0, 0, 255), -1)
+
+
         # Agrandit l'image 4x
         frame_big = cv2.resize(
             frame, (0, 0), fx=1.6, fy=1.6, interpolation=cv2.INTER_NEAREST
@@ -407,56 +425,8 @@ while cap.isOpened():
         # eye_cropped_big_without[:, :, 1] = 0  # Remove green channel
         # eye_cropped_big_without[:, :, 2] = 0  # Remove red channel
 
-        # predict gaze position using the MLP model
-        input_tensor = torch.tensor(
-            [
-                [
-                    noseX,
-                    noseY,
-                    leftEyeX,
-                    leftEyeY,
-                    rightEyeX,
-                    rightEyeY,
-                    leftEyeBottomX,
-                    leftEyeBottomY,
-                    rightEyeBottomX,
-                    rightEyeBottomY,
-                    leftEyeTopX,
-                    leftEyeTopY,
-                    rightEyeTopX,
-                    rightEyeTopY,
-                    leftEyeInnerX,
-                    leftEyeInnerY,
-                    rightEyeInnerX,
-                    rightEyeInnerY,
-                    leftEyeOuterX,
-                    leftEyeOuterY,
-                    rightEyeOuterX,
-                    rightEyeOuterY,
-                    leftPupilX,
-                    leftPupilY,
-                    rightPupilX,
-                    rightPupilY,
-                    yaw,
-                    pitch,
-                    roll,
-                    face_size,
-                ]
-            ],
-            dtype=torch.float32,
-        )
-        with torch.no_grad():
-            gaze_output = gaze_predictor(input_tensor)
-            gaze_x = gaze_output[0][0].item()
-            gaze_y = gaze_output[0][1].item()
-            # draw the gaze position on the frame
-            gaze_screen_x = int((gaze_x) * SCREEN_WIDTH)
-            gaze_screen_y = int((gaze_y) * SCREEN_HEIGHT)
-            cv2.circle(frame_big, (gaze_screen_x, gaze_screen_y), 100, (255, 0, 0), -1)
-            cv2.circle(calib_img, (gaze_screen_x, gaze_screen_y), 100, (255, 0, 0), -1)
-            print("Gaze position :", gaze_x, gaze_y)
-            print("Gaz screen pos : ", gaze_screen_x, gaze_screen_y)
 
+        
         # show the result
         cv2.imshow("Eye Tracking", frame_big)
         cv2.imshow("Calibration", calib_img)
