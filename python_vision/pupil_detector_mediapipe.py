@@ -79,51 +79,6 @@ SCREEN_WIDTH = 1540
 SCREEN_HEIGHT = 880
 # open a csv file to save the face data
 
-cross_position_x = 0
-cross_position_y = 0
-speed = 20  # pixels per frame
-
-
-filename = "face_data" + str(int(time.time())) + ".csv"
-csv_file = open(filename, mode="w", newline="")
-csv_writer = csv.writer(csv_file)
-csv_writer.writerow(
-    [
-        "nose X",
-        "nose Y",
-        "left eye X",
-        "left eye Y",
-        "right eye X",
-        "right eye Y",
-        "left eye bottom X",
-        "left eye bottom Y",
-        "right eye bottom X",
-        "right eye bottom Y",
-        "left eye top X",
-        "left eye top Y",
-        "right eye top X",
-        "right eye top Y",
-        "left eye inner X",
-        "left eye inner Y",
-        "right eye inner X",
-        "right eye inner Y",
-        "left eye outer X",
-        "left eye outer Y",
-        "right eye outer X",
-        "right eye outer Y",
-        "left_pupil X",
-        "left_pupil Y",
-        "right_pupil X",
-        "right_pupil Y",
-        "Yaw",
-        "Pitch",
-        "Roll",
-        "Face Size",
-        "target X normalized",
-        "target Y normalized",
-    ]
-)
-
 # record video from webcam in .MOV format
 fourcc = cv2.VideoWriter_fourcc(*"mp4v")
 out = cv2.VideoWriter("output.mp4", fourcc, 20.0, (640, 480))
@@ -142,29 +97,7 @@ while cap.isOpened():
     results = face_mesh.process(frame_rgb)
 
     h, w, _ = frame.shape
-    print("h:", h, "w:", w)
-
     face_orientation = []
-    tick = cv2.getTickCount()
-    tick = tick / cv2.getTickFrequency()  # seconds
-    tick = tick % (2 * math.pi)
-
-    cross_position_x += speed
-
-    if cross_position_x > SCREEN_WIDTH:
-        cross_position_x = 0
-        cross_position_y += speed
-
-    if cross_position_y > SCREEN_HEIGHT:
-        cross_position_y = 0
-        cross_position_x = 0
-
-    calib_img = etk.gen_red_circle_on_white_bg(
-        size=(SCREEN_WIDTH, SCREEN_HEIGHT),
-        circle_radius=20,
-        circle_position=(int(cross_position_x), int(cross_position_y)),
-    )
-
     if results.multi_face_landmarks:
         for face_landmarks in results.multi_face_landmarks:
             face_orientation.append(
@@ -267,7 +200,16 @@ while cap.isOpened():
                 2,
             )
 
-            print("Z de la face : ", face_landmarks.landmark[RIGHT_EYE_BOTTOM].z)
+        # Afficher la coordonnée Z de la face à l'écran
+            cv2.putText(
+                frame,
+                f"Face Z: {face_landmarks.landmark[NOSE_LANDMARK].z:.4f}",
+                (10, 120 + 1 * 60),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.7,
+                (0, 255, 0),
+                2,
+            )
 
         # Convertir les landmarks de l'iris en coordonnées pixel
         left_iris_pts = np.array([(int(face_landmarks.landmark[i].x * w),
@@ -302,7 +244,6 @@ while cap.isOpened():
 
         # show the result
         cv2.imshow("Eye Tracking", frame_big)
-        cv2.imshow("Calibration", calib_img)
         # cv2.imshow("Extracted Eyes", eye_cropped_big if 'eye_cropped_big' in locals() else np.zeros((100, 100, 3), dtype=np.uint8))
         # cv2.imshow("Extracted Eyes Red", eye_cropped_big_without if 'eye_cropped_big_without' in locals() else np.zeros((100, 100, 3), dtype=np.uint8))
 
@@ -316,5 +257,4 @@ while cap.isOpened():
 
 cap.release()
 out.release()
-csv_file.close()
 cv2.destroyAllWindows()
