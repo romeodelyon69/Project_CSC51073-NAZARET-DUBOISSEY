@@ -8,10 +8,11 @@ import eyeToolKit as etk
 import math
 import time
 import Nlib
+import faceMath 
 
 mp_face_mesh = mp.solutions.face_mesh
 face_mesh = mp_face_mesh.FaceMesh(
-    static_image_mode=False, max_num_faces=1, refine_landmarks=True
+    static_image_mode=False, max_num_faces=1, refine_landmarks=True, min_detection_confidence=0.5, min_tracking_confidence=0.5
 )
 
 cap = cv2.VideoCapture(0)
@@ -57,6 +58,10 @@ RIGHT_EYE_LANDMARKS = [
 LEFT_IRIS_LANDMARKS = [474, 475, 477, 476]  # Left iris landmarks
 RIGHT_IRIS_LANDMARKS = [469, 470, 471, 472]  # Right iris landmarks
 
+NOSE_LANDMARKS = [4, 45, 275, 220, 440, 1, 5, 51, 281, 44, 274, 241, 
+                461, 125, 354, 218, 438, 195, 167, 393, 165, 391,
+                3, 248]
+
 CHIN_LANDMARK = 152
 NOSE_LANDMARK = 1
 LEFT_EYE_OUTER = 33
@@ -72,8 +77,8 @@ RIGHT_PUPIL = 468
 LEFT_MOUTH = 78
 RIGHT_MOUTH = 308
 
-LEFT_EYE_CENTER = 468
-RIGHT_EYE_CENTER = 473
+LEFT_EYE_PUPIL = 468
+RIGHT_EYE_PUPIL = 473
 
 SCREEN_WIDTH = 1540
 SCREEN_HEIGHT = 880
@@ -87,6 +92,8 @@ left_bufferX = Nlib.Buffer(9)
 left_bufferY = Nlib.Buffer(9)
 right_bufferX = Nlib.Buffer(9)
 right_bufferY = Nlib.Buffer(9)
+
+face = faceMath.face(None, {"width": 640, "height": 480, "focal_length": 1})
 
 while cap.isOpened():
     success, frame = cap.read()
@@ -119,128 +126,26 @@ while cap.isOpened():
                 RIGHT_EYE_OUTER,
             )
 
-            # fit ellipse to left eye points
-            left_eye_ellipse, left_eye_points = etk.fit_ellipse_to_eye(
-                face_landmarks.landmark, LEFT_EYE_LANDMARKS, h, w
-            )
-            right_eye_ellipse, right_eye_points = etk.fit_ellipse_to_eye(
-                face_landmarks.landmark, RIGHT_EYE_LANDMARKS, h, w
-            )
+        face.landmarks = face_landmarks.landmark
+        face.compute_face_orientation(frame, NOSE_LANDMARKS, color=(0, 255, 0), size=80)
+        face.compute_eye_vectors()
 
-            if left_eye_ellipse is not None and right_eye_ellipse is not None:
-                # Crée un masque pour les yeux
-                left_eye_img, left_eye_mask = etk.extract_eye_region(
-                    frame, left_eye_ellipse
-                )
-                right_eye_img, right_eye_mask = etk.extract_eye_region(
-                    frame, right_eye_ellipse
-                )
-                # Combine les deux images des yeux
-                eyes = cv2.bitwise_or(left_eye_img, right_eye_img)
+        face.draw_pupil_positions(frame)
+        face.draw_face_orientation(frame, size=80, color=(0, 255, 0))
+        face.draw_face_landmarks(frame, NOSE_LANDMARKS, color=(0, 255, 0))
+        face.draw_debug_interface()
 
-                # Recadre autour des yeux
-                x, y, w_box, h_box = cv2.boundingRect(
-                    np.array(left_eye_points + right_eye_points)
-                )
-                eyes_cropped = eyes[y : y + h_box, x : x + w_box]
-                left_eye_img = left_eye_img[y : y + h_box, x : x + w_box]
-                right_eye_img = right_eye_img[y : y + h_box, x : x + w_box]
+        
+        if cv2.waitKey(1) & 0xFF == ord("r"):
+            face.save_eyeball_reference()
+            print("Eyeball reference saved.")
 
-                # compute the centroid of each eye
-                M_left_eye = cv2.moments(left_eye_mask[y : y + h_box, x : x + w_box])
-                M_right_eye = cv2.moments(right_eye_mask[y : y + h_box, x : x + w_box])
-
-                # draw the centroid on the original frame
-                if M_left_eye["m00"] != 0:
-                    cX_left_eye = int(M_left_eye["m10"] / M_left_eye["m00"]) + x
-                    cY_left_eye = int(M_left_eye["m01"] / M_left_eye["m00"]) + y
-                    cv2.circle(frame, (cX_left_eye, cY_left_eye), 2, (255, 255, 0), -1)
-                if M_right_eye["m00"] != 0:
-                    cX_right_eye = int(M_right_eye["m10"] / M_right_eye["m00"]) + x
-                    cY_right_eye = int(M_right_eye["m01"] / M_right_eye["m00"]) + y
-                    cv2.circle(
-                        frame, (cX_right_eye, cY_right_eye), 2, (255, 255, 0), -1
-                    )
-
-        for i, (yaw, pitch, roll) in enumerate(face_orientation):
-            cv2.putText(
-                frame,
-                f"Yaw: {yaw:.2f}",
-                (10, 30 + i * 60),
-                cv2.FONT_HERSHEY_SIMPLEX,
-                0.7,
-                (0, 255, 0),
-                2,
-            )
-            cv2.putText(
-                frame,
-                f"Pitch: {pitch:.2f}",
-                (10, 60 + i * 60),
-                cv2.FONT_HERSHEY_SIMPLEX,
-                0.7,
-                (0, 255, 0),
-                2,
-            )
-            cv2.putText(
-                frame,
-                f"Roll: {roll:.2f}",
-                (10, 90 + i * 60),
-                cv2.FONT_HERSHEY_SIMPLEX,
-                0.7,
-                (0, 255, 0),
-                2,
-            )
-            cv2.putText(
-                frame,
-                f"Face Size: {face_size:.4f}",
-                (10, 120 + i * 60),
-                cv2.FONT_HERSHEY_SIMPLEX,
-                0.7,
-                (0, 255, 0),
-                2,
-            )
-
-        # Afficher la coordonnée Z de la face à l'écran
-            cv2.putText(
-                frame,
-                f"Face Z: {face_landmarks.landmark[NOSE_LANDMARK].z:.4f}",
-                (10, 120 + 1 * 60),
-                cv2.FONT_HERSHEY_SIMPLEX,
-                0.7,
-                (0, 255, 0),
-                2,
-            )
-
-        # Convertir les landmarks de l'iris en coordonnées pixel
-        left_iris_pts = np.array([(int(face_landmarks.landmark[i].x * w),
-                                    int(face_landmarks.landmark[i].y * h)) for i in LEFT_IRIS_LANDMARKS])
-        right_iris_pts = np.array([(int(face_landmarks.landmark[i].x * w),
-                                    int(face_landmarks.landmark[i].y * h)) for i in RIGHT_IRIS_LANDMARKS])
-
-        # Calculer le centre de chaque iris
-        left_center = tuple(left_iris_pts.mean(axis=0).astype(int))
-        right_center = tuple(right_iris_pts.mean(axis=0).astype(int))
-
-        # Dessiner le contour de l’iris
-        cv2.polylines(frame, [left_iris_pts], isClosed=True, color=(0, 255, 0), thickness=1)
-        cv2.polylines(frame, [right_iris_pts], isClosed=True, color=(0, 255, 0), thickness=1)
-
-        # Dessiner le centre
-        cv2.circle(frame, left_center, 3, (0, 0, 255), -1)
-        cv2.circle(frame, right_center, 3, (0, 0, 255), -1)
-
+        face.draw_eyeball_positions(frame)
 
         # Agrandit l'image 4x
         frame_big = cv2.resize(
             frame, (0, 0), fx=1.6, fy=1.6, interpolation=cv2.INTER_NEAREST
         )
-        eye_cropped_big = cv2.resize(
-            eyes_cropped, (0, 0), fx=10, fy=10, interpolation=cv2.INTER_NEAREST
-        )
-        eye_cropped_big_without = eye_cropped_big.copy()
-        eye_cropped_big_without[:, :, 0] = 0  # Remove blue channel
-        # eye_cropped_big_without[:, :, 1] = 0  # Remove green channel
-        # eye_cropped_big_without[:, :, 2] = 0  # Remove red channel
 
         # show the result
         cv2.imshow("Eye Tracking", frame_big)
