@@ -1,0 +1,135 @@
+\documentclass[11pt]{article}
+
+\usepackage[a4paper,fancysections,titlepage]{polytechnique}
+\usepackage[french]{babel}
+\usepackage[T1]{fontenc}
+\usepackage{blindtext}
+\usepackage[hidelinks]{hyperref}
+\usepackage{amsmath,amssymb}
+\usepackage{pdfpages}
+\usepackage{setspace}
+
+\setlength{\parskip}{1em}
+\setstretch{1}
+
+\newcommand{\code}[1]{%
+    \mbox{\ttfamily%
+        \detokenize{#1}%
+    }%
+}
+
+\newcommand{\resultat}[1]{%
+    \quad \rightsquigarrow \quad #1%
+}
+
+% \logo{delos_logo.jpeg}
+\author{Nathan Duboisset \and Rom\'eo Nazaret}
+\date{\today}
+\title{D\'etection de pupilles par vision par ordinateur}
+\subtitle{Projet CSC51073 -- 2025}
+
+\begin{document}
+
+\maketitle
+
+\tableofcontents
+
+\newpage
+\section{Introduction}
+\subsection{Contexte et motivation}
+% [TODO: D\'ecrire le contexte du projet, pourquoi la d\'etection de pupilles est importante]
+
+\subsection{Probl\'ematique}
+% [TODO: D\'ecrire les d\'efis techniques: robustesse, variations lumineuses, temps r\'eel]
+
+\subsection{Objectifs du projet}
+% [TODO: Lister les objectifs sp\'ecifiques du projet]
+
+\newpage
+\section{\'Etat de l'art}
+\subsection{Algorithme AFIG 2007}
+% [TODO: Pr\'esenter l'article de r\'ef\'erence et l'approche morphologique]
+
+\subsection{MediaPipe Face Mesh}
+% [TODO: D\'ecrire l'outil MediaPipe et son utilisation pour les rep\`eres faciaux]
+
+\subsection{Autres approches}
+% [TODO: Discuter d'autres m\'ethodes existantes (deep learning, approches g\'eom\'etriques, etc.)]
+
+\newpage
+\section{M\'ethode impl\'ement\'ee}
+\subsection{Architecture globale}
+% [TODO: D\'ecrire l'architecture du syst\`eme: pipeline de traitement]
+
+\subsection{D\'etection des rep\`eres faciaux}
+% [TODO: Expliquer l'utilisation de MediaPipe pour localiser les yeux]
+
+\subsection{Algorithme de d\'etection pupillaire}
+% [TODO: D\'etailler l'algorithme morphologique bas\'e sur Cm et Cc]
+\subsubsection{Coefficient morphologique $C_m$}
+% [TODO: Expliquer le calcul de Cm]
+
+\subsubsection{Coefficient colorim\'etrique $C_c$}
+% [TODO: Expliquer le calcul de Cc]
+
+\subsubsection{Proc\'edure en deux passes}
+% [TODO: D\'ecrire pass1 (balayage grossier) et pass2 (raffinement)]
+
+\subsection{Pr\'e-traitement et post-traitement}
+% [TODO: D\'ecrire les \'etapes de normalisation, recadrage, filtrage]
+
+\newpage
+\section{Impl\'ementation}
+\subsection{Organisation du code}
+% [TODO: D\'ecrire la structure du projet: python_vision/, src/, data/]
+
+\subsection{Module Python}
+% [TODO: D\'etailler les scripts principaux: implementationAlgo2007.py, etc.]
+
+\subsection{Biblioth\`eque C++}
+% [TODO: Pr\'esenter EyeToolKit et son r\^ole]
+
+\subsection{Acquisition et journalisation des donn\'ees}
+% [TODO: Expliquer le syst\`eme de capture et de logging (csv_log.py, data/)]
+
+\newpage
+\section{R\'esultats}
+\subsection{Protocole exp\'erimental}
+% [TODO: D\'ecrire le protocole de test: donn\'ees utilis\'ees, m\'etriques]
+
+\subsection{Performances quantitatives}
+% [TODO: Pr\'esenter les r\'esultats chiffr\'es: pr\'ecision, latence, taux de d\'etection]
+
+\subsection{Analyse qualitative}
+% [TODO: Discuter des cas de r\'eussite et d'\'echec, visualisations]
+
+\subsection{Comparaison avec l'\'etat de l'art}
+% [TODO: Comparer avec d'autres m\'ethodes si possible]
+
+\newpage
+\section{Discussion}
+\subsection{Forces de l'approche}
+% [TODO: Identifier les points forts de la m\'ethode]
+
+\subsection{Limites et d\'efis}
+% [TODO: Discuter des limites: variations inter-individuelles, conditions lumineuses, etc.]
+
+\subsection{Am\'eliorations possibles}
+% [TODO: Proposer des pistes d'am\'elioration]
+
+\newpage
+\section{Conclusion}
+% [TODO: R\'esumer le projet, les r\'esultats et les perspectives]
+
+\newpage
+\appendix
+\section*{R\'ef\'erences}
+\addcontentsline{toc}{section}{R\'ef\'erences}
+\begin{thebibliography}{9}
+\bibitem{afig2007}
+B.~Raynal.
+\newblock \emph{Reconnaissance de la pupille par morphologie math\'ematique}.
+\newblock Actes de l'AFIG, 2007.
+\end{thebibliography}
+
+\end{document}
