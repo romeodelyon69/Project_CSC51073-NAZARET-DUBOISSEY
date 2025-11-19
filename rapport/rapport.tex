@@ -23,9 +23,9 @@
 }
 
 % \logo{delos_logo.jpeg}
-\author{Nathan Duboisset \and Rom\'eo Nazaret}
+\author{Nathan Duboisset - Rom\'eo Nazaret}
 \date{\today}
-\title{D\'etection de pupilles par vision par ordinateur}
+\title{Detection of eye look poisition with computer vision}
 \subtitle{Projet CSC51073 -- 2025}
 
 \begin{document}
@@ -36,33 +36,50 @@
 
 \newpage
 \section{Introduction}
-\subsection{Contexte et motivation}
-% [TODO: D\'ecrire le contexte du projet, pourquoi la d\'etection de pupilles est importante]
+\subsection{Context and motivation}
+Computer vision and image processing are now widely used in many applications. Eye tracking and pupil detection have become important tools with practical uses.
 
-\subsection{Probl\'ematique}
-% [TODO: D\'ecrire les d\'efis techniques: robustesse, variations lumineuses, temps r\'eel]
+Pupil detection systems have several useful applications. They can be used as anti-cheating systems in exams by monitoring where students look. They also help people with severe disabilities communicate through eye movements when they cannot move other parts of their body. These applications show why we need accurate and real-time pupil detection methods.
 
-\subsection{Objectifs du projet}
-% [TODO: Lister les objectifs sp\'ecifiques du projet]
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.5\textwidth]{example_context.png}
+    \caption{Example of pupil detection application}
+    \label{fig:example_context}
+\end{figure}
+
+\subsection{Problem}
+
+Detecting the position of the eyes is a difficult task because the eyes can be occluded by other objects, the eyes can be closed, they can be looking in different directions, etc.
+Also there is a lot of technical problem : how to have precise description of the eyes position regardless of head position, quality of the video, number of images per second, etc.
+
+We must be able to adapt to all these different situations while keeping a good precision and a low latency, thus using fast enough solutions.
+
+
+\subsection{Project goals}
+Our goal is to detect the position of the eyes in a video with a good precision and a low latency. We will use a computer vision algorithm to detect the eyes position. We will also try to use a machine learning algorithm to detect the eyes position.
+As we will use the webcam of our computer, we will have a difficult enough problem, as the quality of the video is not always good.
 
 \newpage
-\section{\'Etat de l'art}
-\subsection{Algorithme AFIG 2007}
-% [TODO: Pr\'esenter l'article de r\'ef\'erence et l'approche morphologique]
+\section{State of the art}
+\subsection{AFIG 2007}
 
-\subsection{MediaPipe Face Mesh}
-% [TODO: D\'ecrire l'outil MediaPipe et son utilisation pour les rep\`eres faciaux]
+\subsection{MediaPipe Face Mesh algorithms}
 
-\subsection{Autres approches}
-% [TODO: Discuter d'autres m\'ethodes existantes (deep learning, approches g\'eom\'etriques, etc.)]
+
+\subsection{Other approaches}
 
 \newpage
-\section{M\'ethode impl\'ement\'ee}
-\subsection{Architecture globale}
-% [TODO: D\'ecrire l'architecture du syst\`eme: pipeline de traitement]
+\section{Implemented method}
+\subsection{General architecture}
 
-\subsection{D\'etection des rep\`eres faciaux}
-% [TODO: Expliquer l'utilisation de MediaPipe pour localiser les yeux]
+We chose to focus first on the detection of the eyes gaze position rather than detecting the position of the objects themselves as these tools are already widely used and have a lot of research, and good and fast implementations. Thus we used mediapipe and took the computing from there.
+
+\subsection{Gathering of positions data}
+
+We use mediapipe to gather the positions of the eyes and the face. We use the face mesh algorithm to get the positions of the eyes and the face. We use the iris landmarks to get the positions of the pupils.
+We also use mediapipe to gather the position of the pupils on the face.(TODO : pupil position detection)
+Using this, we compute where should be the position of the middle of the eyeballs, and thus obtain two vectors supposed to be the direction of the eye gaze.
 
 \subsection{Algorithme de d\'etection pupillaire}
 % [TODO: D\'etailler l'algorithme morphologique bas\'e sur Cm et Cc]
