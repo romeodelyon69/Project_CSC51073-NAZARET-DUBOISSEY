@@ -81,67 +81,40 @@ We use mediapipe to gather the positions of the eyes and the face. We use the fa
 We also use mediapipe to gather the position of the pupils on the face.(TODO : pupil position detection)
 Using this, we compute where should be the position of the middle of the eyeballs, and thus obtain two vectors supposed to be the direction of the eye gaze.
 
-\subsection{Algorithme de d\'etection pupillaire}
-% [TODO: D\'etailler l'algorithme morphologique bas\'e sur Cm et Cc]
-\subsubsection{Coefficient morphologique $C_m$}
-% [TODO: Expliquer le calcul de Cm]
+\subsection{Detection of the position of the screen}
 
-\subsubsection{Coefficient colorim\'etrique $C_c$}
-% [TODO: Expliquer le calcul de Cc]
+TODO : calibration with head movements
+TODO : calibration with open CV and showing a known pattern
 
-\subsubsection{Proc\'edure en deux passes}
-% [TODO: D\'ecrire pass1 (balayage grossier) et pass2 (raffinement)]
+\subsection{Estimation of the eye gaze}
 
-\subsection{Pr\'e-traitement et post-traitement}
-% [TODO: D\'ecrire les \'etapes de normalisation, recadrage, filtrage]
+TODO : intersect vectors with screen, take average
+TODO : take sum of vectors, intersect with screen
+TODO : machine learning from this
 
-\newpage
-\section{Impl\'ementation}
-\subsection{Organisation du code}
-% [TODO: D\'ecrire la structure du projet: python_vision/, src/, data/]
+\subsection{Choice of language and libraries}
 
-\subsection{Module Python}
-% [TODO: D\'etailler les scripts principaux: implementationAlgo2007.py, etc.]
-
-\subsection{Biblioth\`eque C++}
-% [TODO: Pr\'esenter EyeToolKit et son r\^ole]
-
-\subsection{Acquisition et journalisation des donn\'ees}
-% [TODO: Expliquer le syst\`eme de capture et de logging (csv_log.py, data/)]
+TODO : tried to use c++ ? python a bit slow
 
 \newpage
-\section{R\'esultats}
-\subsection{Protocole exp\'erimental}
-% [TODO: D\'ecrire le protocole de test: donn\'ees utilis\'ees, m\'etriques]
+\section{Results}
+\subsection{Experimental protocol}
+TODO : data used, metrics
 
-\subsection{Performances quantitatives}
-% [TODO: Pr\'esenter les r\'esultats chiffr\'es: pr\'ecision, latence, taux de d\'etection]
+\subsection{Quantitative performances}
+TODO : precision, latency, detection rate
 
-\subsection{Analyse qualitative}
-% [TODO: Discuter des cas de r\'eussite et d'\'echec, visualisations]
+\subsection{Qualitative analysis}
+TODO : success and failure cases, visualizations
 
-\subsection{Comparaison avec l'\'etat de l'art}
-% [TODO: Comparer avec d'autres m\'ethodes si possible]
-
-\newpage
-\section{Discussion}
-\subsection{Forces de l'approche}
-% [TODO: Identifier les points forts de la m\'ethode]
-
-\subsection{Limites et d\'efis}
-% [TODO: Discuter des limites: variations inter-individuelles, conditions lumineuses, etc.]
-
-\subsection{Am\'eliorations possibles}
-% [TODO: Proposer des pistes d'am\'elioration]
 
 \newpage
 \section{Conclusion}
-% [TODO: R\'esumer le projet, les r\'esultats et les perspectives]
+TODO : summarize the project, the results and the perspectives
 
 \newpage
 \appendix
-\section*{R\'ef\'erences}
-\addcontentsline{toc}{section}{R\'ef\'erences}
+\section*{References}
 \begin{thebibliography}{9}
 \bibitem{afig2007}
 B.~Raynal.
