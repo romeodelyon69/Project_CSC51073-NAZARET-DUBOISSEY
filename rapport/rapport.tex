@@ -83,8 +83,19 @@ Using this, we compute where should be the position of the middle of the eyeball
 
 \subsection{Detection of the position of the screen}
 
-TODO : calibration with head movements
-TODO : calibration with open CV and showing a known pattern
+Once we had the vectors modelizing the position of the eyes, we can intersect them with the expected position of the screen, and knowing the dimensions of the screen, its resolution etc. we can compute the position of the gaze on the screen.
+But to have that computed, we need to know the distance between the head seen by the camera and the screen, even when the head is moving. We also need to know the orientation of the screen, because we can only access the images of the camera. In the beginning, we can make the assumption that the screen is right in front of the camera, "parallel to the face of the person".
+
+To have this, we can use many methods. We tried to implement two of them(TODO):
+
+The first on is to use the openCV calibration function, which works well but takes a printed pattern to calibrate, thus the system is not really autonomous.
+Using this method, we can calibrate the system with a printed pattern, and then use the calibration to compute the position of the gaze on the screen.
+OpenCV once calibrated gives us the position of the items we "show" it, thus we can have a good 3d position approximation. One of the advantages of this method is also that it has a better understanding of the distortion of the camera, i.e. the fact that the image is not a perfect projection of the 3d world, and that the projection of the plannar image of the camera is not a plannar image in the 3d world.
+
+The second idea is to bypass the need to know exactly where the plane of the screen is by using our own calibration method.
+The idea is to use a standard calibration for this type of work which is asking the user to look at something we know on the screen, then move. Here, the idea is to ask the user to look at the center of the screen, and assume that the distance face / screen is proportional to a function of the size of the face. 
+
+To compute this, we ask the user to fix a point, then move forward and backward. we compute the vectors of the eye gaze, and consider they meet (or closely meet) at a point on the screen. This is not perfect as the gaze is not always perpendicular to the screen, but it can give a good approximation. By computing using smoothed data on this, we can calibrate this function on our own, and thus later use it to determine really quickly the position of the gaze on the screen.
 
 \subsection{Estimation of the eye gaze}
 
