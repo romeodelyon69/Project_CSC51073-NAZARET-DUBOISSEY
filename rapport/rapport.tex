@@ -63,11 +63,13 @@ As we will use the webcam of our computer, we will have a difficult enough probl
 \newpage
 \section{State of the art}
 \subsection{AFIG 2007}
+The AFIG 2007 paper by Raynal \cite{afig2007} presents a morphological approach for pupil detection. The method uses two coefficients: $C_m$ (morphological quality) measures how well a candidate circle matches edge contours, and $C_c$ (colorimetric quality) measures color similarity with the detected iris. The algorithm works in two passes: a coarse scan to find candidate circles, then a refinement step. This method is computationally efficient and does not require training data.
 
-\subsection{MediaPipe Face Mesh algorithms}
-
+\subsection{MediaPipe Face Mesh}
+MediaPipe is an open-source framework by Google that provides real-time computer vision solutions. Face Mesh detects 468 facial landmarks using a CNN-based model. The system uses a two-stage approach: first detecting the face bounding box, then applying a neural network to predict 3D landmark positions. It runs in real-time on standard hardware and works across multiple platforms. For eye tracking applications, we can extract the subset of landmarks around the eyes (about 32 points per eye) to isolate the eye regions before applying pupil detection algorithms.
 
 \subsection{Other approaches}
+Recent pupil detection methods include deep learning approaches using U-Net or similar architectures for segmentation, and hybrid methods combining classical computer vision with neural networks. Some systems use infrared cameras for better contrast, but this requires specialized hardware. Our project focuses on visible light cameras to keep the system accessible and low-cost.
 
 \newpage
 \section{Implemented method}
@@ -99,13 +101,17 @@ To compute this, we ask the user to fix a point, then move forward and backward.
 
 \subsection{Estimation of the eye gaze}
 
-TODO : intersect vectors with screen, take average
-TODO : take sum of vectors, intersect with screen
-TODO : machine learning from this
+Once we have the position of the screen in respect to the face of the user, and the estimated vectors of the eye gaze, we must compute the position of the gaze onto the screen.
+
+For this, we introduced two methods :
+- the first one intersects the two vectors with the plane, then takes the average position of the two points of intersection. We thought this was the most accurate one, and also allowed us to debug more easily.
+- the seconde one, seen in some other work, just adds the vectors and intersects the result with the plane. We thought this was less accurate, and also more difficult to debug because we lost information earlier in the process.
 
 \subsection{Choice of language and libraries}
 
-TODO : tried to use c++ ? python a bit slow
+When we started, we wanted to prototype the system in python and then re implement the needed methods in c++, so we could have a faster thus most precise algorithm. However, we quickly backed away from c++ for two reason :
+- first and foremost, we tought the speed of python was too limited but this revealed not true. The used libraries worked really quickly and the system was still fast enough.
+- the libraries we wanted to use were not easily available in c++, or required more complications(use bazel for compilation instead of cmake for example), and we tought this would take too much time on implementation, diverting us from spending more time on the main goal and interesting part of the project.
 
 \newpage
 \section{Results}
