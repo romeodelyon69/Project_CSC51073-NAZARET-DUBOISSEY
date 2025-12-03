@@ -113,10 +113,9 @@ while cap.isOpened():
 
         
         if cv2.waitKey(1) & 0xFF == ord("r"):
-            face.save_eyeball_reference()
+            face2.save_eyeball_reference()
             print("Eyeball reference saved.")
 
-        face.draw_eyeball_positions(frame)
 
         # Agrandit l'image 4x
         frame_big = cv2.resize(
