@@ -80,6 +80,8 @@ class face:
         self.left_eye_vector = None
         self.right_eye_vector = None
 
+        self.gaze_point = None
+
         self.left_eyeball= None
         self.right_eyeball = None
 
@@ -99,6 +101,7 @@ class face:
         self.R_ref_nose = [None]  # Reference rotation matrix for nose stabilization
 
         self.image_params = image_params  # Store image parameters (width, height, focal length, etc.)
+
 
     def compute_eye_vectors(self):
         # Compute eye direction vectors based on landmarks
@@ -161,17 +164,17 @@ class face:
         self.nose_keypoints = points_3d
     
     def save_eyeball_reference(self):
-        face_front_axis = self.orientation_matrix[:, 2]
-
         self.left_eyeball_ref = self.orientation_matrix.T @ (self.left_pupil  - self.face_center)
         self.right_eyeball_ref = self.orientation_matrix.T @ (self.right_pupil  - self.face_center)
 
         self.scale_ref = self.compute_scale()
+        self.compute_mm_to_pixel_scale()
 
         camera_dir_world = np.array([0, 0, 1])
         camera_dir_local = self.orientation_matrix.T @ camera_dir_world
-        self.left_eyeball_ref += 20 * camera_dir_local
-        self.right_eyeball_ref += 20 * camera_dir_local
+        self.left_eyeball_ref += self.mm_to_pixel_scale * EYE_RADIUS_MM * camera_dir_local
+        self.right_eyeball_ref += self.mm_to_pixel_scale * EYE_RADIUS_MM * camera_dir_local
+        print("eye size in pixels :", self.mm_to_pixel_scale * EYE_RADIUS_MM)
 
         print("pos ref left eyeball :", self.left_eyeball_ref)
         print("pos ref right eyeball :", self.right_eyeball_ref)
@@ -207,6 +210,33 @@ class face:
                 total += dist
                 count += 1
         return total / count if count > 0 else 1.0
+    
+    def compute_gaze_intersection(self):
+        #compute the "intersection" of the two gaze vectors in 3D space i.e. the point that minimizes the distance to both gaze lines
+        if self.left_eye_vector is None or self.right_eye_vector is None:
+            return False
+        p1 = self.left_eyeball
+        d1 = self.left_eye_vector / np.linalg.norm(self.left_eye_vector)
+        p2 = self.right_eyeball
+        d2 = self.right_eye_vector / np.linalg.norm(self.right_eye_vector)
+
+        # Compute closest points on each line
+        v1 = p2 - p1
+        a = np.dot(d1, d1)
+        b = np.dot(d1, d2)
+        c = np.dot(d2, d2)
+        d = np.dot(d1, v1)
+        e = np.dot(d2, v1)
+        denom = a * c - b * b
+        if abs(denom) < 1e-6:
+            return None  # Lines are parallel
+        t1 = (b * e - c * d) / denom
+        t2 = (a * e - b * d) / denom
+        closest_point1 = p1 + t1 * d1
+        closest_point2 = p2 + t2 * d2
+        intersection = (closest_point1 + closest_point2) / 2
+        self.gaze_point = intersection
+        return True
 
     def draw_face_landmarks(self, frame, indices, color=(0, 255, 0)):
         for i in indices:
@@ -262,7 +292,7 @@ class face:
         - rotatable 3D view (keys: A/D = rotate yaw, W/S = rotate pitch, Q/E = roll)
         """
 
-        # === Init static attributes (like in MonitorTracking.py) ===
+        # === Init static attributes  ===
         if not hasattr(self, "_dbg_initialized"):
             self._dbg_initialized = True
             self._dbg_yaw = 0.0
@@ -272,6 +302,7 @@ class face:
 
         # === Collect 3D points to display ===
         pts = []
+        pts_description = [] #(size, color)
 
         # Face landmarks in pseudo-3D (if available)
         for lm in self.landmarks:
@@ -279,18 +310,28 @@ class face:
             Y = lm.y * self.image_params["height"]
             Z = lm.z * self.image_params["width"]
             pts.append([X, Y, Z])
+            pts_description.append((1, (255, 255, 255)))
 
         # Eyeballs
         if self.left_eyeball is not None:
             pts.append(self.left_eyeball)
+            pts_description.append((5, (255, 255, 0)))
         if self.right_eyeball is not None:
             pts.append(self.right_eyeball)
+            pts_description.append((5, (0, 255, 255)))
 
         # Pupils
         if self.left_pupil is not None:
             pts.append(self.left_pupil)
+            pts_description.append((4, (255, 0, 0)))
         if self.right_pupil is not None:
             pts.append(self.right_pupil)
+            pts_description.append((4, (0, 0, 255)))
+
+        #gaze point
+        if self.gaze_point is not None:
+            pts.append(self.gaze_point)
+            pts_description.append((6, (0, 255, 0)))
 
         pts = np.array(pts, dtype=float)
 
@@ -310,7 +351,7 @@ class face:
         pts_view = pts_centered @ Rview.T
 
         # === Simple orthographic projection ===
-        # xz-plane used for display (like in MonitorTracking)
+        # xz-plane used for display 
         win_w, win_h = 800, 800
         view = np.ones((win_h, win_w, 3), dtype=np.uint8) * 20
 
@@ -321,24 +362,47 @@ class face:
             proj.append((x, y))
 
         # === Draw points ===
-        for (px, py) in proj[:-4]:  # landmarks only
-            cv2.circle(view, (px, py), 1, (255, 255, 255), -1)
+        for (px, py), (size, color) in zip(proj, pts_description):
+            cv2.circle(view, (px, py), size, color, -1)
 
-        # Eyeballs
-        if self.left_eyeball is not None:
-            px, py = proj[-4]
-            cv2.circle(view, (px, py), 5, (255, 255, 0), -1)
-        if self.right_eyeball is not None:
-            px, py = proj[-3]
-            cv2.circle(view, (px, py), 5, (0, 255, 255), -1)
+        # === Draw eye direction vectors in 3D ===
+        def draw_eye_vector(eyeball, eye_vec, color):
+            if eyeball is None or eye_vec is None:
+                return
 
-        # Pupils
-        if self.left_pupil is not None:
-            px, py = proj[-2]
-            cv2.circle(view, (px, py), 4, (255, 0, 0), -1)
-        if self.right_pupil is not None:
-            px, py = proj[-1]
-            cv2.circle(view, (px, py), 4, (0, 0, 255), -1)
+            # Normalize and scale vector for visibility
+            v = eye_vec.astype(float)
+            norm = np.linalg.norm(v)
+            if norm < 1e-6:
+                return
+
+            v = v / norm * 40.0  # length of arrow in pixels
+
+            # Start = eyeball position
+            start3d = eyeball.copy()
+            end3d = eyeball + v
+
+            # Transform into viewer coordinate system
+            start3d_rel = start3d - self.face_center
+            end3d_rel   = end3d   - self.face_center
+
+            start3d_view = start3d_rel @ Rview.T
+            end3d_view   = end3d_rel @ Rview.T
+
+            start2d = start3d_view
+            end2d   = end3d_view
+
+            sx = int(start2d[0] * self._dbg_scale + win_w/2)
+            sy = int(start2d[1] * self._dbg_scale + win_h/2)
+            ex = int(end2d[0] * self._dbg_scale + win_w/2)
+            ey = int(end2d[1] * self._dbg_scale + win_h/2)
+
+            cv2.arrowedLine(view, (sx, sy), (ex, ey), color, 2, tipLength=0.2)
+
+        # left = magenta, right = cyan
+        draw_eye_vector(self.left_eyeball,  self.left_eye_vector,  (255,   0, 255))
+        draw_eye_vector(self.right_eyeball, self.right_eye_vector, (  0, 255, 255))
+
 
         # === Draw axes ===
         axis_len = 50

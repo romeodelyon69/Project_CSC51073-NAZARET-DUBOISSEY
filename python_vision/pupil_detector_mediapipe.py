@@ -9,6 +9,7 @@ import math
 import time
 import Nlib
 import faceMath 
+import test_world_landmarks as faceCompute
 
 mp_face_mesh = mp.solutions.face_mesh
 face_mesh = mp_face_mesh.FaceMesh(
@@ -17,43 +18,6 @@ face_mesh = mp_face_mesh.FaceMesh(
 
 cap = cv2.VideoCapture(0)
 
-LEFT_EYE_LANDMARKS = [
-    463,
-    398,
-    384,
-    385,
-    386,
-    387,
-    388,
-    466,
-    263,
-    249,
-    390,
-    373,
-    374,
-    380,
-    381,
-    382,
-    362,
-]  # Left eye landmarks
-RIGHT_EYE_LANDMARKS = [
-    33,
-    246,
-    161,
-    160,
-    159,
-    158,
-    157,
-    173,
-    133,
-    155,
-    154,
-    153,
-    145,
-    144,
-    163,
-    7,
-]  # Right eye landmarks
 
 LEFT_IRIS_LANDMARKS = [474, 475, 477, 476]  # Left iris landmarks
 RIGHT_IRIS_LANDMARKS = [469, 470, 471, 472]  # Right iris landmarks
@@ -95,6 +59,14 @@ right_bufferY = Nlib.Buffer(9)
 
 face = faceMath.face(None, {"width": 640, "height": 480, "focal_length": 1})
 
+#load camera calibration parameters from file 
+file_path = "calibration_data.npz"
+with np.load(file_path) as data:
+    camera_matrix = data["camera_matrix"]
+    dist_coeffs = data["dist_coeffs"]
+
+face2 = faceCompute.face(None, {"width": 640, "height": 480}, cam_matrix=camera_matrix)
+
 while cap.isOpened():
     success, frame = cap.read()
     if not success:
@@ -126,14 +98,18 @@ while cap.isOpened():
                 RIGHT_EYE_OUTER,
             )
 
-        face.landmarks = face_landmarks.landmark
-        face.compute_face_orientation(frame, NOSE_LANDMARKS, color=(0, 255, 0), size=80)
-        face.compute_eye_vectors()
+        # face.landmarks = face_landmarks.landmark
+        # face.compute_face_orientation(frame, NOSE_LANDMARKS, color=(0, 255, 0), size=80)
+        # face.compute_eye_vectors()
+        # face.compute_gaze_intersection()
 
-        face.draw_pupil_positions(frame)
-        face.draw_face_orientation(frame, size=80, color=(0, 255, 0))
-        face.draw_face_landmarks(frame, NOSE_LANDMARKS, color=(0, 255, 0))
-        face.draw_debug_interface()
+        # face.draw_pupil_positions(frame)
+        # face.draw_face_orientation(frame, size=80, color=(0, 255, 0))
+        # face.draw_face_landmarks(frame, NOSE_LANDMARKS, color=(0, 255, 0))
+        # face.draw_debug_interface()
+        face2.landmarks = face_landmarks.landmark
+        face2.update()
+        face2.draw_world_landmarks()
 
         
         if cv2.waitKey(1) & 0xFF == ord("r"):
