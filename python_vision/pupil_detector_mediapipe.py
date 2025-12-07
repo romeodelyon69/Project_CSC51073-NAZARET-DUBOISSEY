@@ -9,7 +9,29 @@ import math
 import time
 import Nlib
 import faceMath 
-import test_world_landmarks as faceCompute
+import faceAnalyser as faceCompute
+import mouseController as mouseCtrl
+import screenCalibrationTool as screenCalib
+from pynput import keyboard
+
+# Variable partagée pour communiquer entre le thread clavier et la boucle principale
+key_action = None
+
+def on_press(key):
+    global key_action
+    try:
+        # On stocke la touche appuyée dans la variable globale
+        key_action = key.char
+    except AttributeError:
+        # Pour les touches spéciales (espace, esc, etc.)
+        if key == keyboard.Key.esc:
+            key_action = 'esc'
+        elif key == keyboard.Key.space:
+            key_action = ' '
+
+# Démarrer l'écouteur en arrière-plan (non-bloquant)
+listener = keyboard.Listener(on_press=on_press)
+listener.start()
 
 mp_face_mesh = mp.solutions.face_mesh
 face_mesh = mp_face_mesh.FaceMesh(
@@ -65,9 +87,15 @@ with np.load(file_path) as data:
     camera_matrix = data["camera_matrix"]
     dist_coeffs = data["dist_coeffs"]
 
-face2 = faceCompute.face(None, {"width": 640, "height": 480}, cam_matrix=camera_matrix)
+face2 = faceCompute.face(None, {"width": 640, "height": 480}, cam_matrix=camera_matrix, dist_coeffs=dist_coeffs)
+mouse = mouseCtrl.MouseController()
+calibration_tool = screenCalib.CalibrationTool(nb_points_row=8, nb_points_col=12)
+
+isMouseMoving = False
+key = -1
 
 while cap.isOpened():
+    key_action = None  # Reset the key action at the start of each loop
     success, frame = cap.read()
     if not success:
         break
@@ -110,11 +138,45 @@ while cap.isOpened():
         face2.landmarks = face_landmarks.landmark
         face2.update()
         face2.draw_world_landmarks()
+        screen_u, screen_v = face2.get_screen_coordinates()
 
+        if screen_u is not None and screen_v is not None and isMouseMoving:
+            mouse.update_and_move(screen_u, screen_v)
+
+        if key_action == 'm':
+            isMouseMoving = not isMouseMoving
+            print(f"Mouse moving: {isMouseMoving}")
         
-        if cv2.waitKey(1) & 0xFF == ord("r"):
+        if key_action == 'b':
+            face2.is_predicting_with_article = not face2.is_predicting_with_article
+            print(f"Using article method for gaze prediction: {face2.is_predicting_with_article}")
+
+        if key_action == 'r':
             face2.save_eyeball_reference()
             print("Eyeball reference saved.")
+
+        if key_action == 'c':
+            calibration_tool.start_calibration()
+            print("Calibration started.")
+
+        if key == ord("f"):
+            face2.face_is_centered = not face2.face_is_centered
+            
+        if calibration_tool.is_calibrating: 
+            calibration_tool.show_image()
+            if key_action == ' ':  # Space to capture point
+                screen_point_3D = face2.get_smoothed_gaze_on_screen()
+                left_indicator, right_indicator = face2.get_indicator_positions_mm()
+                
+                calibration_tool.add_screen_point(point_3D=screen_point_3D, left_indicator=left_indicator, right_indicator=right_indicator)
+                if not calibration_tool.next_calibration_point():
+                    print("Calibration completed.")
+                    data = calibration_tool.get_calibration_data()
+                    face2.set_screen_calibration_data_3D_reconstruction(data, model_type="quadratic")
+                    face2.set_screen_calibration_data_article(data)
+                    print("calibration uv pose : ", data["screen_uv_calib_points"])
+                print(f"Calibration point {calibration_tool.current_calib_index} captured.")
+
 
 
         # Agrandit l'image 4x
@@ -126,12 +188,12 @@ while cap.isOpened():
         cv2.imshow("Eye Tracking", frame_big)
         # cv2.imshow("Extracted Eyes", eye_cropped_big if 'eye_cropped_big' in locals() else np.zeros((100, 100, 3), dtype=np.uint8))
         # cv2.imshow("Extracted Eyes Red", eye_cropped_big_without if 'eye_cropped_big_without' in locals() else np.zeros((100, 100, 3), dtype=np.uint8))
-
+    #key = cv2.waitKey(30) & 0xFF
     # record video from webcam
     out.write(frame)
     # print("frame size :", frame.shape)
 
-    if cv2.waitKey(1) & 0xFF == 27:  # Échap pour quitter
+    if key_action == 'esc':  # Échap pour quitter
         break
 
 

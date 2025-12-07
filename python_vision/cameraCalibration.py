@@ -38,6 +38,8 @@ while True:
 
     # ----- Affichage visuel -----
     if found:
+        criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
+        corners = cv2.cornerSubPix(gray, corners, (11, 11), (-1, -1), criteria)
         cv2.drawChessboardCorners(frame, CHECKERBOARD, corners, found)
         status_text = f"Damier détecté ✔️ | Coins: {len(corners)} | Images: {len(objpoints)}/{MAX_IMAGES}"
         color = (0, 255, 0)
