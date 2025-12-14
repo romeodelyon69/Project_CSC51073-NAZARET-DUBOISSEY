@@ -1,0 +1,270 @@
+\documentclass[aspectratio=169]{beamer}
+
+\usepackage[french]{babel}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{tikz}
+
+% Theme
+\usetheme{Madrid}
+\usecolortheme{default}
+
+% Title page information
+\title{Detection of Eye Gaze Position with Computer Vision}
+\subtitle{Projet CSC51073 -- 2025}
+\author{Nathan Duboisset \and Roméo Nazaret}
+\institute{École Polytechnique}
+\date{\today}
+
+\begin{document}
+
+% Title slide
+\begin{frame}
+\titlepage
+\end{frame}
+
+% PART 1: INTRODUCTION & PROBLEM
+\section{Introduction \& Problem}
+
+\begin{frame}{Context and Applications}
+\begin{columns}[c]
+\column{0.5\textwidth}
+\textbf{Why eye tracking?}
+\begin{itemize}
+    \item<2-> Anti-cheating systems in exams
+    \item<3-> Accessibility for people with disabilities
+    \item<4-> Human-computer interaction
+    \item<5-> Real-time communication through eye movements
+\end{itemize}
+
+\column{0.5\textwidth}
+\begin{figure}
+    \includegraphics[width=\textwidth]{src/example_context.png}
+    \caption{Pupil detection example}
+\end{figure}
+\end{columns}
+\end{frame}
+
+\begin{frame}{The Challenge}
+\begin{block}{Technical Difficulties}
+\begin{itemize}
+    \item<1-> Eyes can be \alert{occluded} (glasses, blinks, objects)
+    \item<2-> Variable \alert{head positions} and rotations
+    \item<3-> Varying \alert{video quality} and lighting conditions
+    \item<4-> Need for \alert{precision} and \alert{low latency}
+\end{itemize}
+\end{block}
+
+\vspace{0.5cm}
+
+\begin{block}<5->{Our Goal}
+Detect eye gaze position using a standard \textbf{webcam} with good precision and real-time performance
+\end{block}
+\end{frame}
+
+% PART 2: METHOD & IMPLEMENTATION
+\section{Method \& Implementation}
+
+\begin{frame}{State of the Art}
+\begin{columns}[t]
+\column{0.48\textwidth}
+\begin{block}{AFIG 2007 (Raynal)}
+\textbf{Morphological approach}
+\begin{itemize}
+    \item $C_m$: morphological quality
+    \item $C_c$: colorimetric quality
+    \item No training data needed
+    \item Computationally efficient
+\end{itemize}
+\end{block}
+
+\column{0.48\textwidth}
+\begin{block}{MediaPipe Face Mesh}
+\textbf{Deep learning approach}
+\begin{itemize}
+    \item 468 facial landmarks
+    \item CNN-based model
+    \item Real-time on standard hardware
+    \item 32 landmarks per eye
+\end{itemize}
+\end{block}
+\end{columns}
+
+\vspace{0.5cm}
+\begin{center}
+\alert{$\Rightarrow$ Our choice: MediaPipe + geometric computations}
+\end{center}
+\end{frame}
+
+\begin{frame}{Our Pipeline Architecture}
+\begin{center}
+\begin{tikzpicture}[
+    node distance=1.5cm,
+    box/.style={rectangle, draw, fill=blue!20, text width=3cm, align=center, minimum height=1cm},
+    arrow/.style={->, >=stealth, thick}
+]
+    \node[box] (video) {Webcam Video};
+    \node[box, right of=video, xshift=2cm] (mediapipe) {MediaPipe\\Face Mesh};
+    \node[box, right of=mediapipe, xshift=2cm] (compute) {Geometric\\Computations};
+    \node[box, below of=compute, yshift=-0.5cm] (calib) {Screen\\Calibration};
+    \node[box, right of=compute, xshift=2cm] (gaze) {Gaze Position\\on Screen};
+    \node[box, below of=gaze, yshift=-0.5cm] (control) {Mouse Control\\/ Morse Code};
+    
+    \draw[arrow] (video) -- (mediapipe);
+    \draw[arrow] (mediapipe) -- (compute);
+    \draw[arrow] (calib) -- (compute);
+    \draw[arrow] (compute) -- (gaze);
+    \draw[arrow] (gaze) -- (control);
+\end{tikzpicture}
+\end{center}
+\end{frame}
+
+\begin{frame}{Data Gathering with MediaPipe}
+\textbf{What we extract:}
+\begin{itemize}
+    \item<1-> Face mesh with 468 landmarks
+    \item<2-> Eye and iris positions
+    \item<3-> Pupil positions relative to face
+    \item<4-> Compute eyeball center positions
+    \item<5-> \alert{$\Rightarrow$ Two vectors for gaze direction}
+\end{itemize}
+
+\vspace{0.5cm}
+
+\begin{block}<6->{Alternative Approaches We Tried}
+\begin{itemize}
+    \item CNN for direct pupil detection: \alert{less efficient}
+    \item Geometric disk fitting (circle detection): \alert{unreliable}
+    \item \textbf{Final choice:} MediaPipe method (most reliable)
+\end{itemize}
+\end{block}
+\end{frame}
+
+\begin{frame}{Screen Position Detection}
+\textbf{Challenge:} Find screen position and orientation from camera view
+
+\vspace{0.3cm}
+
+\begin{columns}[t]
+\column{0.48\textwidth}
+\begin{block}{Method 1: OpenCV}
+\begin{itemize}
+    \item Uses printed calibration pattern
+    \item Accurate 3D positioning
+    \item Handles camera distortion
+    \item \alert{Not autonomous}
+\end{itemize}
+\end{block}
+
+\column{0.48\textwidth}
+\begin{block}{Method 2: Custom Calibration}
+\begin{itemize}
+    \item User looks at screen center
+    \item Move forward/backward
+    \item Compute gaze vector intersections
+    \item \alert{Quick and autonomous}
+\end{itemize}
+\end{block}
+\end{columns}
+
+\vspace{0.5cm}
+\begin{center}
+Distance estimation: \textit{face size} $\propto$ \textit{distance to screen}
+\end{center}
+\end{frame}
+
+\begin{frame}{Gaze Estimation \& Interaction}
+\begin{block}{Computing Gaze Position on Screen}
+\textbf{Two approaches:}
+\begin{enumerate}
+    \item<2-> Intersect each eye vector with screen plane, then average
+    \item<3-> Add the two vectors, then intersect with plane
+\end{enumerate}
+\vspace{0.2cm}
+\uncover<4->{\alert{$\Rightarrow$ Method 1 chosen: more accurate and easier to debug}}
+\end{block}
+
+\vspace{0.3cm}
+
+\begin{block}<5->{Communication Methods}
+\begin{itemize}
+    \item<5-> \textbf{Mouse control:} Eye blinks = mouse clicks
+    \item<6-> \textbf{Morse code:} Single blink = dot, double blink = dash
+    \item<7-> Challenge: distinguish intentional vs. natural blinking
+\end{itemize}
+\end{block}
+\end{frame}
+
+% PART 3: RESULTS & CONCLUSION
+\section{Results \& Conclusion}
+
+\begin{frame}{Experimental Results}
+\textbf{Test setup:}
+\begin{itemize}
+    \item User at 60--70 cm from laptop screen
+    \item Multiple target positions (corners, center, intermediate)
+    \item Measure error distance on physical screen
+\end{itemize}
+
+\vspace{0.5cm}
+
+\begin{columns}[c]
+\column{0.5\textwidth}
+\begin{block}{Quantitative Performance}
+\begin{itemize}
+    \item \alert{$\sim$5 cm} average error
+    \item \textbf{Real-time} performance
+    \item High detection rate
+    \item Instant recovery after blinks
+\end{itemize}
+\end{block}
+
+\column{0.5\textwidth}
+\begin{block}{Qualitative Analysis}
+\textbf{Works well:}
+\begin{itemize}
+    \item Normal lighting
+    \item Moderate head motion
+    \item No occlusions
+\end{itemize}
+
+\textbf{Failure cases:}
+\begin{itemize}
+    \item Strong head rotation
+    \item Distance too close/far
+    \item Heavy occlusions
+\end{itemize}
+\end{block}
+\end{columns}
+\end{frame}
+
+\begin{frame}{Conclusion \& Future Work}
+\begin{block}{What We Achieved}
+\begin{itemize}
+    \item<1-> Complete gaze tracking pipeline with \textbf{standard webcam}
+    \item<2-> Real-time performance with low latency
+    \item<3-> Sufficient precision for \alert{large button interaction}
+    \item<4-> Two communication modes: mouse control and Morse code
+\end{itemize}
+\end{block}
+
+\vspace{0.3cm}
+
+\begin{block}<5->{Limitations \& Future Improvements}
+\begin{itemize}
+    \item<5-> Simplify calibration procedure (more automatic)
+    \item<6-> Improve robustness to head pose variations
+    \item<7-> Better handling of lighting changes
+    \item<8-> Combine geometric + learning-based approaches
+\end{itemize}
+\end{block}
+
+\vspace{0.3cm}
+\begin{center}
+\uncover<9->{\Large \textbf{Thank you for your attention!}}\\
+\uncover<9->{\textit{Questions?}}
+\end{center}
+\end{frame}
+
+\end{document}
