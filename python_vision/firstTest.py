@@ -1,11 +1,12 @@
 import cv2
 from mediapipe.python.solutions import face_mesh as mp_face_mesh
 import numpy as np
-import eyeToolKit as etk
+import eyeTracker.eyeToolKit as etk
 import math
 
-import Nlib
-from morse_decoder import PupilDecoder
+
+import eyeTracker.Nlib as Nlib
+from morse_decoder.pupil_decoder import PupilDecoder
 
 from landmarks import (
     CHIN_LANDMARK,
@@ -20,7 +21,6 @@ from landmarks import (
     LEFT_EYE_BOTTOM,
 )
 from utils import display_ypr
-from csv_log import CSVWriter
 
 face_mesh = mp_face_mesh.FaceMesh(
     static_image_mode=False, max_num_faces=1, refine_landmarks=True
@@ -45,7 +45,6 @@ right_bufferY = Nlib.Buffer(9)
 SCREEN_WIDTH = 1540
 SCREEN_HEIGHT = 880
 
-csv_writer = CSVWriter()
 pupil_decoder = PupilDecoder()
 
 while cap.isOpened():
@@ -205,28 +204,6 @@ while cap.isOpened():
             # cv2.putText(frame, f"left eye", (cX_left_eye, cY_left_eye), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 0), 1 )
             # cv2.putText(frame, f"right eye", (cX_right_eye, cY_right_eye), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 0), 1 )
 
-            # save the data in the csv file
-            csv_writer.log_step(
-                face_landmarks,
-                cX_left,
-                cY_left,
-                cX_right,
-                cY_right,
-                cX_left,
-                cY_left,
-                cX_right,
-                cY_right,
-                yaw,
-                pitch,
-                roll,
-                face_size,
-                cross_position_x,
-                cross_position_y,
-                w,
-                h,
-                SCREEN_WIDTH,
-                SCREEN_HEIGHT,
-            )
 
             # print("Z de la face : ", face_landmarks.landmark[RIGHT_EYE_BOTTOM].z)
             leftEyeBottomX = face_landmarks.landmark[LEFT_EYE_BOTTOM].x
@@ -280,5 +257,4 @@ while cap.isOpened():
 
 cap.release()
 out.release()
-csv_file.close()
 cv2.destroyAllWindows()

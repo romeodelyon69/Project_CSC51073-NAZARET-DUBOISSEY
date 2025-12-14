@@ -116,7 +116,7 @@ class face:
 
         self.R_ref_nose = [None]  # Reference rotation matrix for nose stabilization
         
-        self.renderer = r3d.Renderer3D(width=800, height=800)
+        self.renderer = r3d.Renderer3D(width=1600, height=1200)
         self.face_is_centered = False
 
 

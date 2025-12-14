@@ -1,4 +1,4 @@
-from morse_decoder import MorseDecoder
+from .morse_decoder import MorseDecoder
 import eyeTracker.eyeToolKit as etk
 
 
