@@ -1,5 +1,5 @@
 from morse_decoder import MorseDecoder
-import eyeToolKit as etk
+import eyeTracker.eyeToolKit as etk
 
 
 class PupilDecoder:
