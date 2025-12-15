@@ -162,7 +162,7 @@ while cap.isOpened():
                 if not calibration_tool.next_calibration_point():
                     print("Calibration completed.")
                     data = calibration_tool.get_calibration_data()
-                    face2.set_screen_calibration_data_3D_reconstruction(data, model_type="quadratic")
+                    face2.set_screen_calibration_data_3D_reconstruction(data, model_type="affine")
                     face2.set_screen_calibration_data_article(data)
                     print("calibration uv pose : ", data["screen_uv_calib_points"])
                 print(f"Calibration point {calibration_tool.current_calib_index} captured.")
