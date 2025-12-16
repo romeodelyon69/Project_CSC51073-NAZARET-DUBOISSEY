@@ -20,6 +20,8 @@ class Renderer3D:
         self.vectors = []  # (start, end, color, thickness)
         self.text = []     # (text, position, color)
 
+        self.img = None
+
         # Background color
         self.bg_color = (20, 20, 20)
 
@@ -94,6 +96,11 @@ class Renderer3D:
         # Display
         cv2.imshow("3D Debug View", img)
         self.handle_keys()
+        self.img = img
+
+    def get_image(self):
+        return self.img
+        
 
     # --------------------------------------------------------------
     #  AXES

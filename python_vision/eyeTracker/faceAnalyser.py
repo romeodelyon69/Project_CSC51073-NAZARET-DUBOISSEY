@@ -164,7 +164,7 @@ class face:
     def compute_nose_vector(self):
         #on considère que le vecteur du nez est l'axe Z de la matrice d'orientation que l'on fait pivoter autour de l'axe X
         #de 30 degrés pour corriger l'inclinaison naturelle du nez vers le bas
-        angle_rad = np.deg2rad(-30)
+        angle_rad = np.deg2rad(-25)
         Rx = np.array([
             [1, 0, 0],
             [0, np.cos(angle_rad), -np.sin(angle_rad)],
@@ -236,28 +236,26 @@ class face:
 
     def save_eyeball_reference(self):
         self.compute_scale_px_to_mm()
-        
-
         self.ref_scale_mm_to_px = 1/self.scale_px_to_mm
 
         camera_to_left_pupil = self.left_pupil_3D/np.linalg.norm(self.left_pupil_3D)
         camera_to_right_pupil = self.right_pupil_3D/np.linalg.norm(self.right_pupil_3D)
         print("ref scale mm to px :", self.ref_scale_mm_to_px)
         print("eye size in mm :", EYE_RADIUS_MM)
-        left_Offset = self.ref_scale_mm_to_px * EYE_RADIUS_MM * camera_to_left_pupil
-        right_Offset = self.ref_scale_mm_to_px * EYE_RADIUS_MM * camera_to_right_pupil
+        left_Offset =  EYE_RADIUS_MM * camera_to_left_pupil
+        right_Offset =  EYE_RADIUS_MM * camera_to_right_pupil
         print("eye size in pixels :", self.scale_px_to_mm * EYE_RADIUS_MM)
 
-        self.left_eyeball_ref_px = self.orientation_matrix.T @ (self.left_pupil_px + left_Offset - self.face_center_px)
-        self.right_eyeball_ref_px = self.orientation_matrix.T @ (self.right_pupil_px + right_Offset - self.face_center_px)
+        self.left_eyeball_ref_3D = self.orientation_matrix.T @ (self.left_pupil_3D + left_Offset - self.face_center_3D)
+        self.right_eyeball_ref_3D = self.orientation_matrix.T @ (self.right_pupil_3D + right_Offset - self.face_center_3D)
 
         self.is_eyeball_ref_saved = True
 
     def compute_eyeball_positions(self):
         scale_factor = (1/self.scale_px_to_mm) / self.ref_scale_mm_to_px if self.ref_scale_mm_to_px is not None else 1.0
-        if(self.left_eyeball_ref_px is not None and self.right_eyeball_ref_px is not None):
-            self.left_eyeball_px = self.face_center_px + self.orientation_matrix @ (self.left_eyeball_ref_px * scale_factor)
-            self.right_eyeball_px = self.face_center_px + self.orientation_matrix @ (self.right_eyeball_ref_px * scale_factor)
+        if(self.left_eyeball_ref_3D is not None and self.right_eyeball_ref_3D is not None):
+            self.left_eyeball_3D = self.face_center_3D + self.orientation_matrix @ (self.left_eyeball_ref_3D)
+            self.right_eyeball_3D = self.face_center_3D + self.orientation_matrix @ (self.right_eyeball_ref_3D)
 
     def compute_eyeball_position_from_landmarks(self):
         left_eye_3D = [self.landmarks_3D[i] for i in LEFT_EYE_LANDMARKS]
@@ -294,14 +292,7 @@ class face:
         self.left_eyeball_3D = left_eye_center_3D - EYE_RADIUS_MM * normal
         self.right_eyeball_3D = right_eye_center_3D - EYE_RADIUS_MM * normal
 
-        #normal rotation de 30 degrés autour de l'axe X de l'axe Z de l'orientation
-        angle_rad = np.deg2rad(-30)
-        Rx = np.array([
-            [1, 0, 0],
-            [0, np.cos(angle_rad), -np.sin(angle_rad)],
-            [0, np.sin(angle_rad), np.cos(angle_rad)]
-        ])
-        normal = Rx @ self.orientation_matrix[:, 2]
+        normal = self.nose_vector_3D
         left_eye_center_3D = (self.landmarks_3D[LEFT_EYE_INNER] + self.landmarks_3D[LEFT_EYE_OUTER]) / 2
         right_eye_center_3D = (self.landmarks_3D[RIGHT_EYE_INNER] + self.landmarks_3D[RIGHT_EYE_OUTER]) / 2
         self.left_eyeball_3D = left_eye_center_3D - EYE_RADIUS_MM * normal
@@ -336,10 +327,6 @@ class face:
         self.left_pupil_3D = self.left_pupil_px * self.scale_px_to_mm - normalized_center + self.face_center_3D
         self.right_pupil_3D = self.right_pupil_px * self.scale_px_to_mm - normalized_center + self.face_center_3D
 
-        if self.is_eyeball_ref_saved:
-            self.left_eyeball_3D = self.left_eyeball_px * self.scale_px_to_mm - normalized_center + self.face_center_3D
-            self.right_eyeball_3D = self.right_eyeball_px * self.scale_px_to_mm - normalized_center + self.face_center_3D
-
     def compute_gaze_intersection_on_screen(self, screen_z_mm=0):
         if not self.is_eyeball_ref_saved:
             return None, None
@@ -354,7 +341,7 @@ class face:
 
         self.left_gaze_3D_pos_on_screen = left_intersection
         self.right_gaze_3D_pos_on_screen = right_intersection
-        self.average_gaze_3D_pos_on_screen = (left_intersection + right_intersection) / 2
+        self.average_gaze_3D_pos_on_screen = (left_intersection * 0.3 + right_intersection * 0.7)
         #self.buffer_pos_on_screen.add(self.right_gaze_3D_pos_on_screen)
         #self.smoothed_gaze_on_screen = self.buffer_pos_on_screen.get_mean()
         self.smoothed_gaze_on_screen = STABILIZATION_FACTOR * self.smoothed_gaze_on_screen + (1 - STABILIZATION_FACTOR) * self.average_gaze_3D_pos_on_screen if self.smoothed_gaze_on_screen is not None else self.average_gaze_3D_pos_on_screen
@@ -661,8 +648,8 @@ class face:
         elif right_point is not None:
             res = tuple(right_point)
         
-        self.screen_u_article, self.screen_v_article = res
-        return res
+        self.screen_u_article = 0.8 * res[0] + 0.2 * res[1]
+        self.screen_v_article = 0.8 * res[1] + 0.2 * res[0]
 
     def compute_eye_corners(self):
         lm_left_outer = self.landmarks[LEFT_CORNER_LANDMARK]
@@ -705,9 +692,10 @@ class face:
         self.compute_nose_vector()
         self.compute_nose_vector_intersection_on_screen()
         self.compute_nose_uv_on_screen()
+        self.normalize_mediapipe_landmarks()
         if self.is_eyeball_ref_saved:
             self.compute_eyeball_positions()
-        self.normalize_mediapipe_landmarks()
+
 
         #override eyeball position with landmark-based estimation
         self.compute_eyeball_position_from_landmarks() #la construction est moins bonne mais plus stable

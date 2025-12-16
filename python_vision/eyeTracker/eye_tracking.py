@@ -77,7 +77,8 @@ SCREEN_HEIGHT = 880
 
 # record video from webcam in .MOV format
 fourcc = cv2.VideoWriter_fourcc(*"mp4v")
-out = cv2.VideoWriter("output.mp4", fourcc, 20.0, (640, 480))
+out3D = cv2.VideoWriter("3D_reconstruction.mp4", fourcc, 20.0, (800, 800))
+outWebcam = cv2.VideoWriter("webcam_output.mp4", fourcc, 20.0, (640, 480))
 
 left_bufferX = Nlib.Buffer(9)
 left_bufferY = Nlib.Buffer(9)
@@ -173,7 +174,13 @@ while cap.isOpened():
         # show the result
         cv2.imshow("Eye Tracking", frame_big)
     # record video from webcam
-    out.write(frame)
+    img = face2.renderer.get_image()
+    if img is not None:
+        if (img.shape[1], img.shape[0]) != (800, 800):  # option 1 : resize vers 800x800
+            img = cv2.resize(img, (800, 800))
+        out3D.write(img)
+    cv2.imshow("Face 3D View", face2.renderer.get_image())
+    outWebcam.write(frame)
 
 
     if key_action == 'esc':  # Échap pour quitter
@@ -181,5 +188,6 @@ while cap.isOpened():
 
 
 cap.release()
-out.release()
+out3D.release()
+outWebcam.release()
 cv2.destroyAllWindows()
