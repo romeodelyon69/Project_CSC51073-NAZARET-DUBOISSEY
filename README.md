@@ -26,7 +26,7 @@ python eyeTracking.py
 
 Pour exécuter le morse_decoder, lancez :
 
-python firstTest.py
+python firstTest.py, d'autres fenêtre vont s'ouvrir, il suffit des les réduire et vous pouvez commencer à cligner des yeux pour écrire des caractères (dans le terminal)
 
 ---
 
